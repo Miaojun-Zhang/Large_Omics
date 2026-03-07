@@ -1,0 +1,39 @@
+rule all:
+    input: "030.output/output.tsv"
+
+rule create_tsv:
+    input: 
+           gc_files = expand("{sample}.gc", sample = ["test1", "test2"])
+    output: 
+           "030.output/output.tsv"
+    run:
+           with open(output[0],'w') as out:
+             
+               for gc_file in input.gc_files:
+               #get sample names from file names
+                   sample = gc_file.replace('.gc','')
+
+          
+                   with open(gc_file, 'r') as f:
+                       gc_percentage = f.read().strip()          
+               
+                   out.write(f"{sample}\t{gc_percentage}\n")              
+rule calculate_gc:
+     input:"{sample}.fa"
+     output: "{sample}.gc"
+     run:
+       #read fasta files
+         with open(input[0],'r') as f:
+             lines = f.readlines()
+             sequence = ''.join([line.strip() for line in lines if not line.startswith('>')])
+        
+       #calculate GC 
+         sequence = sequence.upper()
+         gc_count = sequence.count('G') + sequence.count('C')
+         gc_percentage = (gc_count / len(sequence)) * 100 if len(sequence) > 0 else 0
+ 
+       # write into gc file
+       
+         with open(output[0],'w') as out:
+              out.write(f"{gc_percentage:.2f}") 
+ 

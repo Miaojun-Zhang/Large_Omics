@@ -1,0 +1,91 @@
+sample_names = ["TLE66_N", "TLE66_T"]
+DB= "/staging/leuven/stg_00079/teaching/hg38_9/chr9.fa"
+
+rule all:
+    input: 
+           "100.final/snps.annotated.tsv",
+           expand("010_fastqc_output/{sample}_fastqc.html", sample=sample_names),
+           expand("010_fastqc_output/{sample}_fastqc.zip", sample=sample_names)
+    
+rule fast_qc:
+    input:
+           "{sample}.fastq"
+    output:
+           html = "010_fastqc_output/{sample}_fastqc.html",
+           zip = "010_fastqc_output/{sample}_fastqc.zip"
+    shell:
+           """
+           mkdir -p 010_fastqc_output
+           fastqc {input} --outdir 010_fastqc_output
+           """
+
+rule bwa_align:
+     input:
+           "{sample}.fastq" 
+     output:
+           bam = "020_bam/{sample}.bam",
+           bai = "020_bam/{sample}.bam.bai"  
+     shell:
+           """
+           mkdir -p 020_bam
+           bwa mem {DB} {input} | samtools sort -o {output.bam} -
+           samtools index {output.bam} {output.bai}
+           """
+
+rule bcftools_calling:
+     input:
+           bam = expand("020_bam/{sample}.bam", sample=sample_names),
+           bai = expand("020_bam/{sample}.bam.bai", sample=sample_names)
+     output:
+           raw_vcf = "030_bcftools/raw_snps.vcf"
+     shell:
+           """
+           mkdir -p 030_bcftools
+           bcftools mpileup -Ou -f {DB} {input.bam} \
+           | bcftools call -mv -Ov -o {output.raw_vcf}
+           """
+
+rule snp_filtering:
+     input:
+           raw_vcf = "030_bcftools/raw_snps.vcf"
+     output:
+           cleaned_vcf = "040_clean_vcf/clean_snps.vcf"
+     shell:
+           """
+           mkdir -p 040_clean_vcf
+           cat {input.raw_vcf} \
+           | vt decompose - \
+           | vt normalize -n -r {DB} - \
+           | vt uniq - \
+           | vt view -f "QUAL>20" -h - \
+           > {output.cleaned_vcf}
+           """
+
+rule snp_annotation:
+     input:
+           cleaned_vcf = "040_clean_vcf/clean_snps.vcf"
+     output:
+           annotated_vcf = "050_snp_annotation/annotated_snps.vcf"
+     shell:
+           """
+           mkdir -p 050_snp_annotation
+           java -Xmx3400m -jar /lustre1/project/stg_00079/teaching/I0U19a_conda_2026/share/snpeff-5.4.0a-0/snpEff.jar eff hg19 -dataDir /staging/leuven/stg_00079/teaching/snpeff_db {input.cleaned_vcf} > {output.annotated_vcf}
+           """
+
+rule create_tsv:
+     input:
+           annotated_vcf = "050_snp_annotation/annotated_snps.vcf"
+     output:
+           "100.final/snps.annotated.tsv"
+     shell:
+           """
+           mkdir -p 100.final
+           printf "CHROM\tPOS\tREF\tALT\tQUAL\tFILTER\tANN\n" > {output}
+           bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO/ANN\n' {input.annotated_vcf} >> {output}
+           """
+           
+           
+      
+
+           
+          

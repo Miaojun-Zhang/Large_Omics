@@ -3,9 +3,7 @@ DB= "/staging/leuven/stg_00079/teaching/hg38_9/chr9.fa"
 
 rule all:
     input: 
-           "100.final/snps.annotated.tsv",
-           expand("010_fastqc_output/{sample}_fastqc.html", sample=sample_names),
-           expand("010_fastqc_output/{sample}_fastqc.zip", sample=sample_names)
+           "100.final/snps.annotated.tsv"
     
 rule fast_qc:
     input:
@@ -15,8 +13,11 @@ rule fast_qc:
            zip = "010_fastqc_output/{sample}_fastqc.zip"
     shell:
            """
+           set -euo pipefail
            mkdir -p 010_fastqc_output
            fastqc {input} --outdir 010_fastqc_output
+           test -s {output.html}
+           test -s {output.zip}
            """
 
 rule bwa_align:
@@ -27,9 +28,12 @@ rule bwa_align:
            bai = "020_bam/{sample}.bam.bai"  
      shell:
            """
+           set -euo pipefail
            mkdir -p 020_bam
            bwa mem {DB} {input} | samtools sort -o {output.bam} -
            samtools index {output.bam} {output.bai}
+           test -s {output.bam}
+           test -s {output.bai}
            """
 
 rule bcftools_calling:
@@ -40,9 +44,12 @@ rule bcftools_calling:
            raw_vcf = "030_bcftools/raw_snps.vcf"
      shell:
            """
+           set -euo pipefail
            mkdir -p 030_bcftools
            bcftools mpileup -Ou -f {DB} {input.bam} \
            | bcftools call -mv -Ov -o {output.raw_vcf}
+           test -s {output.raw_vcf}
+           grep -q "^#CHROM" {output.raw_vcf}
            """
 
 rule snp_filtering:
@@ -52,6 +59,7 @@ rule snp_filtering:
            cleaned_vcf = "040_clean_vcf/clean_snps.vcf"
      shell:
            """
+           set -euo pipefail
            mkdir -p 040_clean_vcf
            cat {input.raw_vcf} \
            | vt decompose - \
@@ -59,6 +67,8 @@ rule snp_filtering:
            | vt uniq - \
            | vt view -f "QUAL>20" -h - \
            > {output.cleaned_vcf}
+           test -s {output.cleaned_vcf}
+           grep -q "^#CHROM" {output.cleaned_vcf}
            """
 
 rule snp_annotation:
@@ -68,8 +78,11 @@ rule snp_annotation:
            annotated_vcf = "050_snp_annotation/annotated_snps.vcf"
      shell:
            """
+           set -euo pipefail
            mkdir -p 050_snp_annotation
            java -Xmx3400m -jar /lustre1/project/stg_00079/teaching/I0U19a_conda_2026/share/snpeff-5.4.0a-0/snpEff.jar eff hg19 -dataDir /staging/leuven/stg_00079/teaching/snpeff_db {input.cleaned_vcf} > {output.annotated_vcf}
+           test -s {output.annotated_vcf}
+           grep -q "^#CHROM" {output.annotated_vcf}
            """
 
 rule create_tsv:
@@ -79,9 +92,12 @@ rule create_tsv:
            "100.final/snps.annotated.tsv"
      shell:
            """
+           set -euo pipefail
            mkdir -p 100.final
            printf "CHROM\tPOS\tREF\tALT\tQUAL\tFILTER\tANN\n" > {output}
            bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%QUAL\t%FILTER\t%INFO/ANN\n' {input.annotated_vcf} >> {output}
+           test -s {output}
+           head -n 1 {output} | grep -q "CHROM"
            """
            
            

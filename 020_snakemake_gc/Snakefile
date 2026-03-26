@@ -18,7 +18,7 @@ rule create_tsv:
                        gc_percentage = f.read().strip()          
                
                    out.write(f"{sample}\t{gc_percentage}\n")              
-rule calculate_gc:
+rule calc_gc:
      input:"{sample}.fa"
      output: "{sample}.gc"
      run:

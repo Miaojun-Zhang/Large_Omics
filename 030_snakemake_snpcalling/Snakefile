@@ -22,7 +22,8 @@ rule fast_qc:
 
 rule bwa_align:
      input:
-           "{sample}.fastq" 
+          fastq= "{sample}.fastq",
+          qc="010_fastqc_output/{sample}_fastqc.html"
      output:
            bam = "020_bam/{sample}.bam",
            bai = "020_bam/{sample}.bam.bai"  
@@ -30,8 +31,8 @@ rule bwa_align:
            """
            set -euo pipefail
            mkdir -p 020_bam
-           bwa mem {DB} {input} | samtools sort -o {output.bam} -
-           samtools index {output.bam} {output.bai}
+           bwa mem {DB} {input.fastq} | samtools sort -o {output.bam} -
+           samtools index {output.bam} 
            test -s {output.bam}
            test -s {output.bai}
            """
@@ -41,7 +42,8 @@ rule bcftools_calling:
            bam = expand("020_bam/{sample}.bam", sample=sample_names),
            bai = expand("020_bam/{sample}.bam.bai", sample=sample_names)
      output:
-           raw_vcf = "030_bcftools/raw_snps.vcf"
+           raw_vcf = "030_bcftools/raw_snps.vcf",
+           stats="030_bcftools/stats.txt"
      shell:
            """
            set -euo pipefail
@@ -50,6 +52,7 @@ rule bcftools_calling:
            | bcftools call -mv -Ov -o {output.raw_vcf}
            test -s {output.raw_vcf}
            grep -q "^#CHROM" {output.raw_vcf}
+           bcftools stats {output.raw_vcf} > {output.stats}
            """
 
 rule snp_filtering:
@@ -80,9 +83,9 @@ rule snp_annotation:
            """
            set -euo pipefail
            mkdir -p 050_snp_annotation
-           java -Xmx3400m -jar /lustre1/project/stg_00079/teaching/I0U19a_conda_2026/share/snpeff-5.4.0a-0/snpEff.jar eff hg19 -dataDir /staging/leuven/stg_00079/teaching/snpeff_db {input.cleaned_vcf} > {output.annotated_vcf}
+           java -Xmx3400m -jar /lustre1/project/stg_00079/teaching/I0U19a_conda_2026/share/snpeff-5.4.0a-0/snpEff.jar eff hg38 -dataDir /staging/leuven/stg_00079/teaching/snpeff_db {input.cleaned_vcf} > {output.annotated_vcf}
            test -s {output.annotated_vcf}
-           grep -q "^#CHROM" {output.annotated_vcf}
+           grep -q "ANN=" {output.annotated_vcf}
            """
 
 rule create_tsv:

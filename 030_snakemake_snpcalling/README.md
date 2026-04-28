@@ -11,17 +11,17 @@ ln -s /lustre1/project/stg_00079/teaching/I0U19a_data_2026/TLE66_T.fastq .
 ln -s /staging/leuven/stg_00079/teaching/hg38_9/chr9.fa .
 
 # dry run
-snakemake --snakefile /path/to/Snakefile -n
+snakemake --snakefile /data/leuven/381/vsc38194/r1079125_Miaojun_Zhang/030_snakemake_snpcalling/Snakefile -n
 # Run snakemake
 using the `--snakefile` parameter pointing to original snakemake file
-snakemake --snakefile /path/to/original/Snakefile --cores 4
+snakemake --snakefile /data/leuven/381/vsc38194/r1079125_Miaojun_Zhang/030_snakemake_snpcalling/Snakefile --cores 4
 snakemake -c1 --snakefile Snakefile
 
 # search for the path to the original snakefile
 find $VSC_HOME -name "Snakefile" 2>/dev/null
 find $VSC_DATA -name "Snakefile" 2>/dev/null
 
-# elative paths
+# relative paths
 current directory (.), parent directory (..), your
 home director (˜), someone else’s home directory (˜ma51k),
 relative to current location (scs/staﬀ if you are at /home)

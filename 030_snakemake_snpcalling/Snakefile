@@ -3,7 +3,8 @@ DB= "/staging/leuven/stg_00079/teaching/hg38_9/chr9.fa"
 
 rule all:
     input: 
-           "100.final/snps.annotated.tsv"
+           "100.final/snps.annotated.tsv",
+           "150.db/snps.sqlite"
     
 rule fast_qc:
     input:
@@ -87,6 +88,14 @@ rule snp_annotation:
            test -s {output.annotated_vcf}
            grep -q "ANN=" {output.annotated_vcf}
            """
+
+rule load_database:
+      input:
+          "050_snp_annotation/annotated_snps.vcf"
+      output:
+          "150.db/snps.sqlite"
+      script:
+          "snp_database.py"
 
 rule create_tsv:
      input:

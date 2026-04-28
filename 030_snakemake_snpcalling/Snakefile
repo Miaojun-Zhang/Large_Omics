@@ -4,7 +4,9 @@ DB= "/staging/leuven/stg_00079/teaching/hg38_9/chr9.fa"
 rule all:
     input: 
            "100.final/snps.annotated.tsv",
-           "150.db/snps.sqlite"
+           "160.figures/fig1_impact_severity.svg",
+           "160.figures/fig2_top_affected_genes.svg",
+           "160.figures/fig3_qual_density.svg"
     
 rule fast_qc:
     input:
@@ -96,6 +98,16 @@ rule load_database:
           "150.db/snps.sqlite"
       script:
           "snp_database.py"
+
+rule plot_figures:
+      input:
+          "150.db/snps.sqlite"
+      output:
+          fig1 = "160.figures/fig1_impact_severity.svg",
+          fig2 = "160.figures/fig2_top_affected_genes.svg",
+          fig3 = "160.figures/fig3_qual_density.svg"
+      script:
+          "visualization.py"
 
 rule create_tsv:
      input:

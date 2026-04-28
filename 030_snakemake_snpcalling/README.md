@@ -28,6 +28,6 @@ relative to current location (scs/staﬀ if you are at /home)
 
 # git push 
 check status: git status
-git add file
+git add file / git add .
 git commit -m "message"
 git push

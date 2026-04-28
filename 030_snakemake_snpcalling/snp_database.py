@@ -28,8 +28,9 @@ for record in reader:
     #acquire info related to SNPs table
     alt = record.ALT[0].value
     snp_id = "_".join([record.CHROM, str(record.POS), record.REF, alt])
+    qual = record.QUAL
     snps.append([
-        snp_id, record.CHROM, record.POS, record.REF, alt])
+        snp_id, record.CHROM, record.POS, record.REF, alt, qual])
     
     #acquire info related to Effect table
     #INFO in record is a dictionary, and get the value by the key-"ANN"
@@ -54,7 +55,7 @@ for record in reader:
 
 reader.close()
 #First table: SNP.     1    snp_id, chr, pos, ref, alt  ..... (genome build)
-df_snps = pd.DataFrame(snps, columns='snp_id chrom pos ref alt'.split())
+df_snps = pd.DataFrame(snps, columns='snp_id chrom pos ref alt qual'.split())
 df_snps
 
 #Second table:effect.  +    snp_id, gene, effect, impact, ...
@@ -80,8 +81,7 @@ number_snps = conn.execute('select Count(*) from snps').fetchone()[0]
 print(f"Number of SNPs: {number_snps}")
 
 #2.check that all calls have a unknown genotype
-check_calls = conn.execute('''select * from call
-                           where genotype IS NULL 
+check_calls = conn.execute('''select * from call where genotype IS NULL 
                            OR genotype = './.'
                            OR genotype = 'None/None'
                            ''').fetchall()

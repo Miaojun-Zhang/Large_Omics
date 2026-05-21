@@ -14,12 +14,18 @@ ln -s /staging/leuven/stg_00079/teaching/hg38_9/chr9.fa .
 snakemake --snakefile /data/leuven/381/vsc38194/r1079125_Miaojun_Zhang/030_snakemake_snpcalling/Snakefile -n
 # Run snakemake
 using the `--snakefile` parameter pointing to original snakemake file
-snakemake --snakefile /data/leuven/381/vsc38194/r1079125_Miaojun_Zhang/030_snakemake_snpcalling/Snakefile --cores 4
+
+snakemake --snakefile /data/leuven/381/vsc38194/r1079125_Miaojun_Zhang/030_snakemake_snpcalling/Snakefile -c 4
+
 snakemake -c1 --snakefile Snakefile
 
-# search for the path to the original snakefile
+# search for the path to the original snakefile 
 find $VSC_HOME -name "Snakefile" 2>/dev/null
 find $VSC_DATA -name "Snakefile" 2>/dev/null
+
+# connect to Mango
+iron auth <user name> <zone name> <host>
+iron auth r1029125 	gbiomed gbiomed.irods.icts.kuleuven.be
 
 # relative paths
 current directory (.), parent directory (..), your

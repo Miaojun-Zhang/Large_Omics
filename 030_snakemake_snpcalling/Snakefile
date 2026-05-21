@@ -6,7 +6,20 @@ rule all:
            "100.final/snps.annotated.tsv",
            "160.figures/fig1_impact_severity.svg",
            "160.figures/fig2_top_affected_genes.svg",
-           "160.figures/fig3_qual_density.svg"
+           "160.figures/fig3_qual_density.svg",
+           "upload_done.flag"
+
+rule download_fastq:
+    output:
+           "{sample}.fastq"
+    shell:
+           """
+           iron get \
+           /gbiomed/home/large_omics_course/fastq/{wildcards.sample}.fastq \
+           {output}
+           """
+      
+
     
 rule fast_qc:
     input:
@@ -123,7 +136,23 @@ rule create_tsv:
            test -s {output}
            head -n 1 {output} | grep -q "CHROM"
            """
-           
+
+rule upload_to_Mango:
+      input:
+           annotated_vcf = "050_snp_annotation/annotated_snps.vcf"
+      
+      output:
+           touch("upload_done.flag")
+      shell:
+           """
+           set -euo pipefail
+
+           iron mkdir -p /gbiomed/home/large_omics_course/output/r1079125/
+
+           iron put \
+           {input.annotated_vcf} \
+           /gbiomed/home/large_omics_course/output/r1079125/
+           """
            
       
 
